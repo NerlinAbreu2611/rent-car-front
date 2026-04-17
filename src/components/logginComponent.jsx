@@ -13,6 +13,7 @@ import {
 import { Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Logo from "../assets/userlogo.png";
+import { crearBitacora } from "../utils/bitacora";
 
 export function Login() {
   const [usuario, setUsuario] = useState("");
@@ -49,7 +50,7 @@ export function Login() {
     if (value.length <= 2) {
       setErrors((prev) => ({
         ...prev,
-        usuario: "Campo requerido*",
+        usuario: "Usuario requerido*",
       }));
     } else {
       setErrors((prev) => ({ ...prev, usuario: "" }));
@@ -64,7 +65,7 @@ export function Login() {
     if (value.length <= 2 || value === "") {
       setErrors((prev) => ({
         ...prev,
-        clave: "Campo requerido*",
+        clave: "Clave requerida*",
       }));
     } else {
       setErrors((prev) => ({ ...prev, clave: "" }));
@@ -79,13 +80,25 @@ export function Login() {
       const data = await res.json();
 
       const autenticado = Object.values(data).find(
-        (e) => e.username === usuario && e.password === clave,
+        (e) =>
+          e.username === usuario &&
+          e.password === clave &&
+          e.estado === "activo",
       );
 
       if (autenticado !== undefined) {
         localStorage.setItem("usuario", JSON.stringify(autenticado));
 
         handleOpen("Autenticación exitosa");
+
+        crearBitacora(
+          autenticado.usuario_id,
+          "INICIAR SESION",
+          `El usuario ${autenticado.username} inicio sesión.`,
+          `GET`,
+          "USUARIO",
+        );
+
         navigate("/dashboard");
       } else {
         localStorage.setItem("usuario", null);

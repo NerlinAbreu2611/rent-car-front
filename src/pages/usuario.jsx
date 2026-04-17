@@ -25,25 +25,22 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-
-import { crearBitacora } from "../utils/bitacora";
 import SearchIcon from "@mui/icons-material/Search";
 import CircularProgress from "@mui/material/CircularProgress";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import Button from "@mui/material/Button";
+import { crearBitacora } from "../utils/bitacora";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import AddIcon from "@mui/icons-material/Add";
+import { UsuarioModal } from "../modal/usuarioModal";
 
-import { ClienteModal } from "../modal/clienteModal";
-
-export function Cliente() {
-  const [clientes, setClientes] = useState([]);
+export function Usuario() {
+  const [usuario, setUsuario] = useState([]);
   const [columna, setColumna] = useState("nombre");
   const [carga, setCarga] = useState([]);
   const [busqueda, setBusqueda] = useState("");
-  const [clienteModal, setClienteModal] = useState(null);
+  const [usuarioModal, setUsuarioModal] = useState(null);
 
   const [loading, setLoading] = useState(null);
 
@@ -76,38 +73,36 @@ export function Cliente() {
   const header = [
     { id: "nombre", label: "Nombre" },
     { id: "apellido", label: "Apellido" },
-    { id: "cedula", label: "Cédula" },
-    { id: "telefono", label: "Teléfono" },
-    { id: "email", label: "Email" },
-    { id: "direccion", label: "Dirección" },
+    { id: "username", label: "Username" },
+    { id: "password", label: "Password" },
+    { id: "rol", label: "Rol" },
     { id: "estado", label: "Estado" },
     { id: "acciones", label: "Acciones", sortable: false },
   ];
 
-  const cargarClientes = async () => {
+  const cargarusuario = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/cliente");
+      const res = await fetch("http://localhost:3001/api/usuario");
       if (!res.ok) throw new Error("Error en el servidor");
       const datos = await res.json();
-      setClientes(datos);
+      setUsuario(datos);
     } catch (error) {
       console.error(error.message);
     }
   };
 
   useEffect(() => {
-    cargarClientes();
+    cargarusuario();
   }, []);
 
   // LÓGICA DE FILTRADO Y ORDENAMIENTO
   useEffect(() => {
-    let datosFiltrados = clientes.filter(
-      (c) =>
-        String(c[columna] || "")
+    let datosFiltrados = usuario.filter(
+      (v) =>
+        String(v[columna] || "")
           .toLowerCase()
-          .startsWith(busqueda.toLowerCase()) && c.estado === estadoFiltro,
+          .startsWith(busqueda.toLowerCase()) && v.estado === estadoFiltro,
     );
-
     // Aplicar Ordenamiento
     datosFiltrados.sort((a, b) => {
       const valA = String(a[orderBy] || "").toLowerCase();
@@ -118,7 +113,7 @@ export function Cliente() {
 
     setCarga(datosFiltrados);
     setPage(0); // Reiniciar a la página 1 al filtrar
-  }, [busqueda, columna, clientes, order, orderBy, estadoFiltro]);
+  }, [busqueda, columna, usuario, order, orderBy, estadoFiltro]);
 
   // MANEJADORES DE EVENTOS
   const handleChangePage = (event, newPage) => setPage(newPage);
@@ -139,27 +134,26 @@ export function Cliente() {
   // Función para abrir como Agregar
   const abrirAgregar = () => {
     setTipoAccion("Agregar");
-    setClienteModal(null);
+    setUsuarioModal(null);
     setModalOpen(true);
   };
 
   //Función para deshabilitar
-  const deshabilitar = (cliente) => {
-    fetch("http://localhost:3001/api/cliente", {
+  const deshabilitar = (usuario) => {
+    fetch(`http://localhost:3001/api/usuario/${usuario.usuario_id}`, {
       method: "DELETE",
       headers: {
         "Content-type": "application/json",
       },
-      body: JSON.stringify(cliente),
+      body: JSON.stringify(usuario),
     })
       .then((res) => {
         if (!res.ok) throw new Error("Error en la petición");
         return res.json();
       })
-
       .then((data) => {
         setCarga((prev) => {
-          return prev.map((i) => i.cliente_id === data.cliente_id);
+          return prev.filter((u) => u.usuario_id !== data.usuario.usuario_id);
         });
 
         const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -167,20 +161,22 @@ export function Cliente() {
         crearBitacora(
           usuario.usuario_id,
           "DESHABILITAR",
-          `Deshabilito el cliente ${data.cliente_id} con nombre ${data.nombre}`,
+          `Se deshabilito el usuario ${data.usuario.usuario_id} con nombre ${data.usuario.nombre}`,
           "DELETE",
-          "CLIENTE",
+          "USUARIO",
         );
 
-        setClientes((prev) =>
-          prev.map((c) =>
-            c.cliente_id === data.cliente_id
-              ? { ...c, estado: data.estado }
-              : c,
+        setUsuario((preu) =>
+          preu.map((u) =>
+            u.usuario_id === data.usuario.usuario_id
+              ? { ...u, estado: data.usuario.estado }
+              : u,
           ),
         );
       })
-      .then(setSnack({ ...snack, open: true, mensaje: "Modificación exitosa" }))
+      .then(() =>
+        setSnack({ ...snack, open: true, mensaje: "Modificación exitosa" }),
+      )
       .catch((error) =>
         setSnack(...snack, {
           open: true,
@@ -192,15 +188,14 @@ export function Cliente() {
 
   //Funcion para habilitar
 
-  const habilitar = (cliente) => {
-    setLoading(cliente.cliente_id);
-    fetch("http://localhost:3001/api/cliente", {
+  const habilitar = (usuario) => {
+    setLoading(usuario.usuario_id);
+    fetch(`http://localhost:3001/api/usuario/${usuario.usuario_id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        cliente_id: cliente.cliente_id,
         estado: "activo",
       }),
     })
@@ -210,7 +205,7 @@ export function Cliente() {
       })
       .then((data) => {
         setCarga((prev) => {
-          return prev.filter((i) => i.cliente_id !== data.cliente_id);
+          return prev.filter((v) => v.usuario_id !== data.usuario_id);
         });
 
         const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -218,16 +213,16 @@ export function Cliente() {
         crearBitacora(
           usuario.usuario_id,
           "HABILITAR",
-          `Se habilito el cliente ${data.cliente_id} con nombre ${data.nombre}`,
+          `Se habilito el usuario ${data.usuario_id} con nombre ${data.nombre}`,
           "PATCH",
-          "CLIENTE",
+          "USUARIO",
         );
 
-        setClientes((prev) =>
-          prev.map((c) =>
-            c.cliente_id === data.cliente_id
-              ? { ...c, estado: data.estado }
-              : c,
+        setUsuario((prev) =>
+          prev.map((v) =>
+            v.usuario_id === data.usuario_id
+              ? { ...v, estado: data.estado }
+              : v,
           ),
         );
       })
@@ -252,10 +247,10 @@ export function Cliente() {
   };
 
   // Función para abrir como Editar
-  const abrirEditar = (cliente) => {
+  const abrirEditar = (usuario) => {
     setTipoAccion("Editar");
-    // Aquí podrías cargar los datos del cliente en otro estado si quisieras
-    setClienteModal(cliente);
+    // Aquí podrías cargar los datos del usuario en otro estado si quisieras
+    setUsuarioModal(usuario);
     setModalOpen(true);
   };
   return (
@@ -273,7 +268,7 @@ export function Cliente() {
             variant="h4"
             sx={{ flexGrow: 1 }} // <--- ESTA ES LA CLAVE: ocupa todo el espacio sobrante a la izquierda
           >
-            Mantenimiento de Clientes
+            Mantenimiento de Usuarios
           </Typography>
 
           <FormControl sx={{ minWidth: 200 }}>
@@ -367,14 +362,13 @@ export function Cliente() {
             <TableBody>
               {carga
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((cliente) => (
-                  <TableRow key={cliente.cliente_id} hover>
-                    <TableCell>{cliente.nombre}</TableCell>
-                    <TableCell>{cliente.apellido}</TableCell>
-                    <TableCell>{cliente.cedula}</TableCell>
-                    <TableCell>{cliente.telefono || "N/A"}</TableCell>
-                    <TableCell>{cliente.email || "N/A"}</TableCell>
-                    <TableCell>{cliente.direccion || "N/A"}</TableCell>
+                .map((usuario) => (
+                  <TableRow key={usuario.usuario_id} hover>
+                    <TableCell>{usuario.nombre}</TableCell>
+                    <TableCell>{usuario.apellido}</TableCell>
+                    <TableCell>{usuario.username}</TableCell>
+                    <TableCell>{usuario.password}</TableCell>
+                    <TableCell>{usuario.rol}</TableCell>
                     <TableCell align="center">
                       <Chip
                         icon={
@@ -382,10 +376,10 @@ export function Cliente() {
                             style={{ fontSize: "12px", color: "inherit" }}
                           />
                         }
-                        label={cliente.estado}
+                        label={usuario.estado}
                         variant="outlined"
                         color={
-                          cliente.estado === "activo" ? "success" : "error"
+                          usuario.estado === "activo" ? "success" : "error"
                         }
                         sx={{ fontWeight: "bold", textTransform: "capitalize" }}
                       />
@@ -395,23 +389,23 @@ export function Cliente() {
                         <>
                           <IconButton
                             color="primary"
-                            onClick={() => abrirEditar(cliente)}
+                            onClick={() => abrirEditar(usuario)}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton
                             color="error"
-                            onClick={() => deshabilitar(cliente)}
+                            onClick={() => deshabilitar(usuario)}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </>
                       ) : (
                         <IconButton
-                          onClick={() => habilitar(cliente)}
+                          onClick={() => habilitar(usuario)}
                           color="success"
                         >
-                          {loading === cliente.cliente_id ? (
+                          {loading === usuario.usuario_id ? (
                             <CircularProgress size={20} />
                           ) : (
                             <RestartAltIcon />
@@ -437,11 +431,11 @@ export function Cliente() {
           />
         </TableContainer>
         {/* El Modal recibe el estado dinámico */}
-        <ClienteModal
+        <UsuarioModal
           accion={tipoAccion}
           open={modalOpen}
-          cliente={clienteModal}
-          setCargaModal={setClientes}
+          usuario={usuarioModal}
+          setCargaModal={setUsuario}
           handleClose={() => setModalOpen(false)}
           showSnack={showSnack} // <--- Nueva prop
         />

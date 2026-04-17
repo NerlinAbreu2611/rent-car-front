@@ -97,10 +97,23 @@ export function Dashboard() {
                 Clientes
               </MenuItem>
               {usuario.rol === "admin" ? (
-                <MenuItem onClick={handleClose}>Usuarios</MenuItem>
+                <MenuItem
+                  onClick={handleClose}
+                  component={Link}
+                  to="/dashboard/usuario"
+                >
+                  Usuarios
+                </MenuItem>
               ) : (
                 ""
               )}
+              <MenuItem
+                onClick={handleClose}
+                component={Link}
+                to="/dashboard/vehiculo"
+              >
+                Vehiculos
+              </MenuItem>
             </Menu>
 
             <Button
@@ -227,7 +240,11 @@ export function Dashboard() {
               <Divider />
 
               {/* OPCIONES DEL MENÚ */}
-              <MenuItem onClick={handleClose}>
+              <MenuItem
+                onClick={handleClose}
+                component={Link}
+                to="/dashboard/perfil"
+              >
                 <ListItemIcon>
                   <PersonIcon fontSize="small" />
                 </ListItemIcon>

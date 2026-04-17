@@ -25,8 +25,6 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-
-import { crearBitacora } from "../utils/bitacora";
 import SearchIcon from "@mui/icons-material/Search";
 import CircularProgress from "@mui/material/CircularProgress";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
@@ -35,15 +33,16 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import Button from "@mui/material/Button";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import AddIcon from "@mui/icons-material/Add";
+import { crearBitacora } from "../utils/bitacora";
 
-import { ClienteModal } from "../modal/clienteModal";
+import { VehiculoModal } from "../modal/vehiculoModal";
 
-export function Cliente() {
-  const [clientes, setClientes] = useState([]);
-  const [columna, setColumna] = useState("nombre");
+export function Vehiculo() {
+  const [vehiculos, setVehiculos] = useState([]);
+  const [columna, setColumna] = useState("marca");
   const [carga, setCarga] = useState([]);
   const [busqueda, setBusqueda] = useState("");
-  const [clienteModal, setClienteModal] = useState(null);
+  const [vehiculoModal, setVehiculoModal] = useState(null);
 
   const [loading, setLoading] = useState(null);
 
@@ -52,7 +51,7 @@ export function Cliente() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // ESTADOS PARA ORDENAMIENTO
-  const [orderBy, setOrderBy] = useState("nombre");
+  const [orderBy, setOrderBy] = useState("marca");
   const [order, setOrder] = useState("asc");
 
   const [alignment, setAlignment] = React.useState("activo");
@@ -74,40 +73,38 @@ export function Cliente() {
   const handleCloseSnack = () => setSnack({ ...snack, open: false });
 
   const header = [
-    { id: "nombre", label: "Nombre" },
-    { id: "apellido", label: "Apellido" },
-    { id: "cedula", label: "Cédula" },
-    { id: "telefono", label: "Teléfono" },
-    { id: "email", label: "Email" },
-    { id: "direccion", label: "Dirección" },
+    { id: "marca", label: "Marca" },
+    { id: "modelo", label: "Modelo" },
+    { id: "año", label: "Año" },
+    { id: "placa", label: "Placa" },
+    { id: "disponible", label: "Disponibilidad" },
     { id: "estado", label: "Estado" },
     { id: "acciones", label: "Acciones", sortable: false },
   ];
 
-  const cargarClientes = async () => {
+  const cargarvehiculos = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/cliente");
+      const res = await fetch("http://localhost:3001/api/vehiculo");
       if (!res.ok) throw new Error("Error en el servidor");
       const datos = await res.json();
-      setClientes(datos);
+      setVehiculos(datos);
     } catch (error) {
       console.error(error.message);
     }
   };
 
   useEffect(() => {
-    cargarClientes();
+    cargarvehiculos();
   }, []);
 
   // LÓGICA DE FILTRADO Y ORDENAMIENTO
   useEffect(() => {
-    let datosFiltrados = clientes.filter(
-      (c) =>
-        String(c[columna] || "")
+    let datosFiltrados = vehiculos.filter(
+      (v) =>
+        String(v[columna] || "")
           .toLowerCase()
-          .startsWith(busqueda.toLowerCase()) && c.estado === estadoFiltro,
+          .startsWith(busqueda.toLowerCase()) && v.estado === estadoFiltro,
     );
-
     // Aplicar Ordenamiento
     datosFiltrados.sort((a, b) => {
       const valA = String(a[orderBy] || "").toLowerCase();
@@ -118,7 +115,7 @@ export function Cliente() {
 
     setCarga(datosFiltrados);
     setPage(0); // Reiniciar a la página 1 al filtrar
-  }, [busqueda, columna, clientes, order, orderBy, estadoFiltro]);
+  }, [busqueda, columna, vehiculos, order, orderBy, estadoFiltro]);
 
   // MANEJADORES DE EVENTOS
   const handleChangePage = (event, newPage) => setPage(newPage);
@@ -139,27 +136,28 @@ export function Cliente() {
   // Función para abrir como Agregar
   const abrirAgregar = () => {
     setTipoAccion("Agregar");
-    setClienteModal(null);
+    setVehiculoModal(null);
     setModalOpen(true);
   };
 
   //Función para deshabilitar
-  const deshabilitar = (cliente) => {
-    fetch("http://localhost:3001/api/cliente", {
+  const deshabilitar = (vehiculo) => {
+    fetch(`http://localhost:3001/api/vehiculo/${vehiculo.vehiculo_id}`, {
       method: "DELETE",
       headers: {
         "Content-type": "application/json",
       },
-      body: JSON.stringify(cliente),
+      body: JSON.stringify(vehiculo),
     })
       .then((res) => {
         if (!res.ok) throw new Error("Error en la petición");
         return res.json();
       })
-
       .then((data) => {
         setCarga((prev) => {
-          return prev.map((i) => i.cliente_id === data.cliente_id);
+          return prev.filter(
+            (v) => v.vehiculo_id !== data.vehiculo.vehiculo_id,
+          );
         });
 
         const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -167,20 +165,22 @@ export function Cliente() {
         crearBitacora(
           usuario.usuario_id,
           "DESHABILITAR",
-          `Deshabilito el cliente ${data.cliente_id} con nombre ${data.nombre}`,
+          `Se deshabilito el vehiculo ${data.vehiculo.vehiculo_id} con marca ${data.vehiculo.marca}`,
           "DELETE",
-          "CLIENTE",
+          "VEHICULO",
         );
 
-        setClientes((prev) =>
-          prev.map((c) =>
-            c.cliente_id === data.cliente_id
-              ? { ...c, estado: data.estado }
-              : c,
+        setVehiculos((prev) =>
+          prev.map((v) =>
+            v.vehiculo_id === data.vehiculo.vehiculo_id
+              ? { ...v, estado: data.vehiculo.estado }
+              : v,
           ),
         );
       })
-      .then(setSnack({ ...snack, open: true, mensaje: "Modificación exitosa" }))
+      .then(() =>
+        setSnack({ ...snack, open: true, mensaje: "Modificación exitosa" }),
+      )
       .catch((error) =>
         setSnack(...snack, {
           open: true,
@@ -192,15 +192,14 @@ export function Cliente() {
 
   //Funcion para habilitar
 
-  const habilitar = (cliente) => {
-    setLoading(cliente.cliente_id);
-    fetch("http://localhost:3001/api/cliente", {
+  const habilitar = (vehiculo) => {
+    setLoading(vehiculo.vehiculo_id);
+    fetch(`http://localhost:3001/api/vehiculo/${vehiculo.vehiculo_id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        cliente_id: cliente.cliente_id,
         estado: "activo",
       }),
     })
@@ -210,7 +209,7 @@ export function Cliente() {
       })
       .then((data) => {
         setCarga((prev) => {
-          return prev.filter((i) => i.cliente_id !== data.cliente_id);
+          return prev.filter((v) => v.vehiculo_id !== data.vehiculo_id);
         });
 
         const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -218,16 +217,16 @@ export function Cliente() {
         crearBitacora(
           usuario.usuario_id,
           "HABILITAR",
-          `Se habilito el cliente ${data.cliente_id} con nombre ${data.nombre}`,
+          `Se habilito el vehiculo ${data.vehiculo_id} con marca ${data.marca}`,
           "PATCH",
-          "CLIENTE",
+          "VEHICULO",
         );
 
-        setClientes((prev) =>
-          prev.map((c) =>
-            c.cliente_id === data.cliente_id
-              ? { ...c, estado: data.estado }
-              : c,
+        setVehiculos((prev) =>
+          prev.map((v) =>
+            v.vehiculo_id === data.vehiculo_id
+              ? { ...v, estado: data.estado }
+              : v,
           ),
         );
       })
@@ -252,10 +251,10 @@ export function Cliente() {
   };
 
   // Función para abrir como Editar
-  const abrirEditar = (cliente) => {
+  const abrirEditar = (vehiculo) => {
     setTipoAccion("Editar");
     // Aquí podrías cargar los datos del cliente en otro estado si quisieras
-    setClienteModal(cliente);
+    setVehiculoModal(vehiculo);
     setModalOpen(true);
   };
   return (
@@ -273,7 +272,7 @@ export function Cliente() {
             variant="h4"
             sx={{ flexGrow: 1 }} // <--- ESTA ES LA CLAVE: ocupa todo el espacio sobrante a la izquierda
           >
-            Mantenimiento de Clientes
+            Mantenimiento de Vehiculos
           </Typography>
 
           <FormControl sx={{ minWidth: 200 }}>
@@ -367,14 +366,12 @@ export function Cliente() {
             <TableBody>
               {carga
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((cliente) => (
-                  <TableRow key={cliente.cliente_id} hover>
-                    <TableCell>{cliente.nombre}</TableCell>
-                    <TableCell>{cliente.apellido}</TableCell>
-                    <TableCell>{cliente.cedula}</TableCell>
-                    <TableCell>{cliente.telefono || "N/A"}</TableCell>
-                    <TableCell>{cliente.email || "N/A"}</TableCell>
-                    <TableCell>{cliente.direccion || "N/A"}</TableCell>
+                .map((vehiculo) => (
+                  <TableRow key={vehiculo.vehiculo_id} hover>
+                    <TableCell>{vehiculo.marca}</TableCell>
+                    <TableCell>{vehiculo.modelo}</TableCell>
+                    <TableCell>{vehiculo.anio}</TableCell>
+                    <TableCell>{vehiculo.placa}</TableCell>
                     <TableCell align="center">
                       <Chip
                         icon={
@@ -382,10 +379,25 @@ export function Cliente() {
                             style={{ fontSize: "12px", color: "inherit" }}
                           />
                         }
-                        label={cliente.estado}
+                        label={
+                          vehiculo.disponible ? "Disponible" : "No disponible"
+                        }
+                        variant="outlined"
+                        color={vehiculo.disponible ? "success" : "error"}
+                        sx={{ fontWeight: "bold", textTransform: "capitalize" }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        icon={
+                          <FiberManualRecordIcon
+                            style={{ fontSize: "12px", color: "inherit" }}
+                          />
+                        }
+                        label={vehiculo.estado}
                         variant="outlined"
                         color={
-                          cliente.estado === "activo" ? "success" : "error"
+                          vehiculo.estado === "activo" ? "success" : "error"
                         }
                         sx={{ fontWeight: "bold", textTransform: "capitalize" }}
                       />
@@ -395,23 +407,23 @@ export function Cliente() {
                         <>
                           <IconButton
                             color="primary"
-                            onClick={() => abrirEditar(cliente)}
+                            onClick={() => abrirEditar(vehiculo)}
                           >
                             <EditIcon fontSize="small" />
                           </IconButton>
                           <IconButton
                             color="error"
-                            onClick={() => deshabilitar(cliente)}
+                            onClick={() => deshabilitar(vehiculo)}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </>
                       ) : (
                         <IconButton
-                          onClick={() => habilitar(cliente)}
+                          onClick={() => habilitar(vehiculo)}
                           color="success"
                         >
-                          {loading === cliente.cliente_id ? (
+                          {loading === vehiculo.vehiculo_id ? (
                             <CircularProgress size={20} />
                           ) : (
                             <RestartAltIcon />
@@ -437,11 +449,11 @@ export function Cliente() {
           />
         </TableContainer>
         {/* El Modal recibe el estado dinámico */}
-        <ClienteModal
+        <VehiculoModal
           accion={tipoAccion}
           open={modalOpen}
-          cliente={clienteModal}
-          setCargaModal={setClientes}
+          vehiculo={vehiculoModal}
+          setCargaModal={setVehiculos}
           handleClose={() => setModalOpen(false)}
           showSnack={showSnack} // <--- Nueva prop
         />

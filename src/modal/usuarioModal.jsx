@@ -8,6 +8,10 @@ import {
   TextField,
   Snackbar,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 
 import { crearBitacora } from "../utils/bitacora";
@@ -29,11 +33,11 @@ const styleModal = {
   borderRadius: 2,
 };
 // Solo recibe props, no maneja su propia apertura
-export function ClienteModal({
+export function UsuarioModal({
   accion,
   open,
   handleClose,
-  cliente,
+  usuario,
   setCargaModal,
   showSnack,
 }) {
@@ -42,20 +46,19 @@ export function ClienteModal({
   const initialsErrors = {
     nombre: accion === "Agregar" ? " requerido*" : "",
     apellido: accion === "Agregar" ? "requerido*" : "",
-    cedula: accion === "Agregar" ? "requerido*" : "",
-    telefono: "",
-    email: "",
+    username: accion === "Agregar" ? "requerido*" : "",
+    password: accion === "Agregar" ? "requerido*" : "",
+    rol: "",
   };
 
   const [errors, setErrors] = useState(initialsErrors);
   const initialState = {
-    cliente_id: 0,
+    usuario_id: 0,
     nombre: "",
     apellido: "",
-    cedula: "",
-    telefono: "",
-    email: "",
-    direccion: "",
+    username: "",
+    password: "",
+    rol: "empleado",
   };
 
   const [form, setForm] = useState(initialState);
@@ -63,6 +66,9 @@ export function ClienteModal({
   const soloLetrasRegex = /^[a-zA-ZñÑáéíóúÁÉÍÓÚ\s]*$/;
 
   const action = async () => {
+    setLoading(true);
+    const id = usuario ? `/${usuario.usuario_id}` : "";
+
     const metodo = accion === "Agregar" ? "POST" : "PATCH";
     const dataAEnviar = { ...form };
 
@@ -72,10 +78,8 @@ export function ClienteModal({
       }
     });
 
-    setLoading(true);
-
     try {
-      const response = await fetch("http://localhost:3001/api/cliente", {
+      const response = await fetch(`http://localhost:3001/api/usuario${id}`, {
         method: metodo,
         headers: {
           "Content-type": "application/json",
@@ -95,12 +99,12 @@ export function ClienteModal({
         // ACTUALIZACIÓN LOCAL DEL ESTADO
         setCargaModal((prevCarga) => {
           if (metodo === "PATCH") {
-            // MODIFICAR: Buscamos el cliente por ID y lo reemplazamos
+            // MODIFICAR: Buscamos el usuario por ID y lo reemplazamos
             return prevCarga.map((item) =>
-              item.cliente_id === data.cliente_id ? data : item,
+              item.usuario_id === data.usuario_id ? data : item,
             );
           } else {
-            // AGREGAR: Simplemente lo añadimos al final (o al principio con [clienteServidor, ...prevCarga])
+            // AGREGAR: Simplemente lo añadimos al final (o al principio con [usuarioServidor, ...prevCarga])
             return [...prevCarga, data];
           }
         });
@@ -110,9 +114,9 @@ export function ClienteModal({
         crearBitacora(
           usuario.usuario_id,
           metodo === "PATCH" ? "EDITAR" : "CREAR",
-          `Se ${metodo === "PATCH" ? "edito" : "creo"} el cliente con nombre ${data.nombre} y cedula ${data.cedula}`,
+          `Se ${metodo === "PATCH" ? "edito" : "creo"} el usuario con nombre ${data.nombre} y username ${data.username}`,
           metodo,
-          "CLIENTE",
+          "USUARIO",
         );
       } else {
         const errorData = await response.json();
@@ -130,36 +134,36 @@ export function ClienteModal({
   }, [handleClose]);
 
   useEffect(() => {
-    if (cliente && accion !== "Agregar") {
+    if (usuario && accion !== "Agregar") {
       setForm({
-        cliente_id: cliente.cliente_id || 0,
-        nombre: cliente.nombre || "",
-        apellido: cliente.apellido || "",
-        cedula: cliente.cedula || "",
-        telefono: cliente.telefono || "",
-        email: cliente.email || "",
-        direccion: cliente.direccion || "", // <-- Agregamos dirección
+        usuario_id: usuario.usuario_id || 0,
+        nombre: usuario.nombre || "",
+        apellido: usuario.apellido || "",
+        username: usuario.username || "",
+        password: usuario.password || "",
+        rol: usuario.rol || "empleado",
       });
 
       // Opcional: Limpiar errores si estás editando
       setErrors({
         nombre: "",
         apellido: "",
-        cedula: "",
-        telefono: "",
-        email: "",
+        username: "",
+        password: "",
+        rol: "",
       });
     } else {
       // Si es "Agregar", reseteamos al estado inicial
       setForm(initialState);
     }
-  }, [cliente, accion, open]); // Se ejecuta al abrir o cambiar de cliente
+  }, [usuario, accion, open]); // Se ejecuta al abrir o cambiar de usuario
 
   // --- PASO 1: Calcular el disabled aquí (esto es instantáneo) ---
   const hayErrores = Object.values(errors).some((e) => e !== "");
 
   // También validamos que los campos obligatorios no estén vacíos por si acaso
-  const camposVacios = !form.nombre || !form.apellido || !form.cedula;
+  const camposVacios =
+    !form.nombre || !form.apellido || !form.username || !form.password;
   const isButtonDisabled = hayErrores || camposVacios;
 
   const handleChange = (e) => {
@@ -181,25 +185,14 @@ export function ClienteModal({
     // --- PASO 2: Validar errores ---
     let errorMensaje = "";
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (name === "nombre") {
       errorMensaje = newValue.length <= 2 ? "Mínimo 3 caracteres*" : "";
     } else if (name === "apellido") {
       errorMensaje = newValue.length <= 2 ? "Mínimo 3 caracteres*" : "";
-    } else if (name === "cedula") {
-      errorMensaje =
-        newValue.length !== 11 ? "Cédula debe tener 11 dígitos*" : "";
-    } else if (name === "telefono") {
-      errorMensaje =
-        newValue.length !== 10 && newValue.length !== 0
-          ? "Teléfono inválido*"
-          : "";
-    } else if (name === "email") {
-      errorMensaje =
-        !emailRegex.test(newValue) && newValue.length > 0
-          ? "Formato invalido"
-          : "";
+    } else if (name === "username") {
+      errorMensaje = newValue.length <= 2 ? "Mínimo 3 caracteres*" : "";
+    } else if (name === "password") {
+      errorMensaje = newValue.length < 6 ? "Mínimo 6 caracteres*" : "";
     }
 
     // Actualizamos el estado de errores
@@ -218,7 +211,7 @@ export function ClienteModal({
               mb: 2,
             }}
           >
-            <Typography variant="h5">{accion} cliente</Typography>
+            <Typography variant="h5">{accion} usuario</Typography>
             <IconButton onClick={handleClose}>
               <CloseIcon />
             </IconButton>
@@ -248,49 +241,35 @@ export function ClienteModal({
               helperText={errors.apellido}
             />
             <TextField
-              name="cedula"
-              label="Cédula"
+              name="username"
+              label="Username"
               variant="filled"
               fullWidth
-              value={form.cedula}
+              value={form.username}
               onChange={handleChange}
               inputProps={{ maxLength: 11 }}
-              error={!!errors.cedula}
-              helperText={errors.cedula}
+              error={!!errors.username}
+              helperText={errors.username}
             />
             <TextField
-              name="telefono"
-              label="Teléfono"
+              name="password"
+              label="Password"
               variant="filled"
               fullWidth
-              value={form.telefono}
+              value={form.password}
               onChange={handleChange}
               inputProps={{ maxLength: 10 }}
-              error={!!errors.telefono}
-              helperText={errors.telefono}
+              error={!!errors.password}
+              helperText={errors.password}
             />
-            <TextField
-              name="email"
-              label="Email"
-              variant="filled"
-              fullWidth
-              value={form.email}
-              onChange={handleChange}
-              inputProps={{ maxLength: 40 }}
-              error={!!errors.email}
-              helperText={errors.email}
-            />
-            <TextField
-              name="direccion"
-              label="Dirección"
-              variant="filled"
-              fullWidth
-              multiline
-              rows={2}
-              value={form.direccion}
-              onChange={handleChange}
-              inputProps={{ maxLength: 100 }}
-            />
+            <FormControl fullWidth variant="filled">
+              <InputLabel>Rol</InputLabel>
+              <Select name="rol" value={form.rol} onChange={handleChange}>
+                <MenuItem value="empleado">Empleado</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="supervisor">Supervisor</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
 
           <Button
