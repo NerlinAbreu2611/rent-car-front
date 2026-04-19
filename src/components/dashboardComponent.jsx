@@ -114,6 +114,13 @@ export function Dashboard() {
               >
                 Vehiculos
               </MenuItem>
+              <MenuItem
+                onClick={handleClose}
+                component={Link}
+                to="/dashboard/feriado"
+              >
+                Días Feriados
+              </MenuItem>
             </Menu>
 
             <Button
@@ -129,10 +136,10 @@ export function Dashboard() {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
             >
-              <MenuItem onClick={handleClose}>Alquiler de vehiculo</MenuItem>
-              <MenuItem onClick={handleClose}>Devolucion de vehiculo</MenuItem>
+              <MenuItem onClick={handleClose} component={Link} to="/dashboard/reservas">Registro de Alquiler de Vehículo</MenuItem>
+              <MenuItem onClick={handleClose} component={Link} to="/dashboard/recepciones">Devolucion de vehiculo</MenuItem>
 
-              <MenuItem onClick={handleClose}>Pago de vehiculo</MenuItem>
+              <MenuItem onClick={handleClose} component={Link} to="/dashboard/pagos">Pago de vehiculo</MenuItem>
             </Menu>
             <Button
               color="inherit"
@@ -147,13 +154,8 @@ export function Dashboard() {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
             >
-              <MenuItem onClick={handleClose}>Vehiculos disponibles</MenuItem>
-              <MenuItem onClick={handleClose}>Alquileres activos</MenuItem>
-              <MenuItem onClick={handleClose}>
-                Historial de alquileres por cliente
-              </MenuItem>
-              <MenuItem onClick={handleClose}>
-                Vehiculos alquilados dias feriados o no
+              <MenuItem onClick={handleClose} component={Link} to="/dashboard/consultas">
+                 Explorador de Consultas Dinámico
               </MenuItem>
             </Menu>
 
@@ -170,13 +172,8 @@ export function Dashboard() {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
             >
-              <MenuItem onClick={handleClose}>Ingresos por fecha</MenuItem>
-              <MenuItem onClick={handleClose}>Vehiculos mas rentados</MenuItem>
-
-              <MenuItem onClick={handleClose}>Clientes frecuentes</MenuItem>
-              <MenuItem onClick={handleClose}>Penalidades generedas</MenuItem>
-              <MenuItem onClick={handleClose}>
-                Vehiculos alquilados dias feriados o no
+              <MenuItem onClick={handleClose} component={Link} to="/dashboard/reportes">
+                 Portal de Reportes de Rentabilidad y Descargas
               </MenuItem>
             </Menu>
           </Box>
@@ -287,8 +284,8 @@ export function Dashboard() {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 2 }}>
-        <Card>
+      <Box sx={{ p: 1 }}>
+        <Card elevation={0} sx={{ border: 'none', bgcolor: 'transparent' }}>
           <CardContent>
             {/* Aquí van tus componentes de navegación o cualquier contenido */}
             <PageRoutes />
